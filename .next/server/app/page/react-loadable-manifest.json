@@ -1,0 +1,9 @@
+{
+  "[project]/components/GlobeViewer.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/components/GlobeViewer.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/_57733f77._.js",
+      "static/chunks/components_GlobeViewer_tsx_58da4380._.js"
+    ]
+  }
+}
