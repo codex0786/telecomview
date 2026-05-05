@@ -21,7 +21,8 @@ import LoadingScreen from "@/components/LoadingScreen";
 import HoverTooltip from "@/components/HoverTooltip";
 
 // Cesium must not SSR
-const GlobeViewer = dynamic(() => import("@/components/GlobeViewer"), { ssr: false });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const GlobeViewer = dynamic<any>(() => import("@/components/GlobeViewer"), { ssr: false });
 
 function TelecomViewApp() {
   const globeRef = useRef<GlobeHandle | null>(null);

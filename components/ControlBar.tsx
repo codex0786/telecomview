@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useTelecomView } from "@/lib/TelecomViewContext";
 import type { GlobeHandle } from "./GlobeViewer";
 
 interface ControlBarProps { globeRef: React.RefObject<GlobeHandle | null> }
@@ -14,6 +15,8 @@ const HOTSPOTS = [
 ];
 
 export function ControlBar({ globeRef }: ControlBarProps) {
+  const { refreshData, isLoading } = useTelecomView();
+
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2"
       style={{ animation:"slideUp 0.5s ease-out" }}>
@@ -40,6 +43,13 @@ export function ControlBar({ globeRef }: ControlBarProps) {
           className="px-2.5 py-1 rounded-lg text-[9px] font-mono text-slate-500 hover:text-white transition-all hover:bg-white/5">
           🌙 NIGHT
         </button>
+        <button onClick={refreshData}
+          className="px-2.5 py-1 rounded-lg text-[9px] font-mono font-semibold transition-all"
+          style={{ color:isLoading ? "#94a3b8" : "#00f5ff", background:isLoading ? "rgba(255,255,255,0.06)" : "rgba(0,245,255,0.08)" }}
+          disabled={isLoading}
+        >
+          {isLoading ? "REFRESHING..." : "REFRESH"}
+        </button>
       </div>
     </div>
   );
@@ -49,6 +59,7 @@ export function StatusBar() {
   // ── Fix: never render Date on the server — use useEffect so the clock
   //    is client-only, avoiding SSR/client hydration mismatch. ──────────
   const [utcTime, setUtcTime] = useState<string | null>(null);
+  const { lastUpdate, isLoading } = useTelecomView();
 
   useEffect(() => {
     const fmt = () =>
@@ -79,7 +90,10 @@ export function StatusBar() {
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-1 h-1 rounded-full bg-green-500" style={{ animation:"blink 2s step-end infinite" }} />
+        <div className="w-1 h-1 rounded-full" style={{ background:isLoading ? "#ffb800" : "#22c55e", animation:"blink 2s step-end infinite" }} />
+        <span className="text-[8px] font-mono text-slate-700">
+          {isLoading ? "UPDATING DATA..." : lastUpdate ? `UPDATED ${lastUpdate.toISOString().slice(0, 19).replace("T", " ")}` : "DATA LOADING"}
+        </span>
         <span className="text-[8px] font-mono text-slate-700">TELECOMVIEW v1.0 — GLOBAL NETWORK INTELLIGENCE</span>
       </div>
     </div>

@@ -1,11 +1,6 @@
 "use client";
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { useTelecomView } from "@/lib/TelecomViewContext";
-import {
-  useSubmarineCableData, useCloudRegionData, useIXPData,
-  useFiberData, useBGPAlertData, useOutageData,
-  useCellTowerData, useLatencyData,
-} from "@/lib/dataHooks";
 import { PROVIDER_COLORS } from "@/lib/cloudData";
 import { CABLE_STATUS_COLORS } from "@/lib/cableData";
 
@@ -139,11 +134,6 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
     latencyProbes,
     setCameraPosition, setIsLoading, setHoverTooltip,
   } = useTelecomView();
-
-  // Mount all data hooks
-  useSubmarineCableData(); useCloudRegionData(); useIXPData();
-  useFiberData(); useBGPAlertData(); useOutageData();
-  useCellTowerData(); useLatencyData();
 
   useImperativeHandle(ref, () => ({
     flyTo: (lat, lng, alt = 2_000_000) => {

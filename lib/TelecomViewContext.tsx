@@ -1,10 +1,11 @@
 "use client";
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import type {
   SubmarineCable, CloudRegion, IXP, BGPAlert, AutonomousSystem,
   CellTower, NetworkOutage, LatencyProbe, FiberRoute, StarlinkSat,
   LayerConfig, HoverTooltip,
 } from "./types";
+import { fetchTelecomData } from "./telecomApi";
 
 // Re-export types needed by components
 export type { BGPAlert, NetworkOutage, IXP, CloudRegion, SubmarineCable, CellTower, LayerConfig };
@@ -51,6 +52,7 @@ export interface TelecomViewState {
   setIsLoading: (b: boolean) => void;
   lastUpdate: Date | null;
   setLastUpdate: (d: Date) => void;
+  refreshData: () => Promise<void>;
   layerErrors: Partial<Record<keyof LayerConfig, string>>;
   setLayerError: (layer: keyof LayerConfig, err: string | null) => void;
 }
@@ -114,23 +116,67 @@ export function TelecomViewProvider({ children }: { children: React.ReactNode })
       return n;
     }), []);
 
+  const refreshData = useCallback(async () => {
+    setIsLoading(true);
+    const controller = new AbortController();
+
+    try {
+      const data = await fetchTelecomData(controller.signal);
+      setCables(data.cables);
+      setTotalCables(data.totalCables);
+      setCloudRegions(data.regions);
+      setTotalRegions(data.totalRegions);
+      setIxps(data.ixps);
+      setTotalIXPs(data.totalIXPs);
+      setBgpAlerts(data.alerts);
+      setTotalAlerts(data.totalAlerts);
+      setOutages(data.outages);
+      setTotalOutages(data.totalOutages);
+      setLatencyProbes(data.probes);
+      setCellTowers(data.towers);
+      setTotalTowers(data.totalTowers);
+    } catch (error) {
+      console.error("Failed to load telecom data:", error);
+      setLayerError("submarineCables", "Unable to load telecom data");
+    } finally {
+      setLastUpdate(new Date());
+      setIsLoading(false);
+    }
+  }, [setLayerError]);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const value = useMemo(() => ({
+    cables, setCables, cloudRegions, setCloudRegions, ixps, setIxps,
+    bgpAlerts, setBgpAlerts, autonomousSystems, setAutonomousSystems,
+    cellTowers, setCellTowers, outages, setOutages,
+    latencyProbes, setLatencyProbes, fiberRoutes, setFiberRoutes,
+    starlinkSats, setStarlinkSats,
+    selectedCable, setSelectedCable, selectedRegion, setSelectedRegion,
+    selectedIXP, setSelectedIXP, selectedAlert, setSelectedAlert,
+    selectedTower, setSelectedTower, selectedOutage, setSelectedOutage,
+    totalCables, setTotalCables, totalRegions, setTotalRegions,
+    totalIXPs, setTotalIXPs, totalAlerts, setTotalAlerts,
+    totalTowers, setTotalTowers, totalOutages, setTotalOutages,
+    layers, toggleLayer, hoverTooltip, setHoverTooltip,
+    cameraPosition, setCameraPosition, isLoading, setIsLoading,
+    lastUpdate, setLastUpdate, refreshData, layerErrors, setLayerError,
+  }), [
+    cables, cloudRegions, ixps, bgpAlerts, autonomousSystems, cellTowers,
+    outages, latencyProbes, fiberRoutes, starlinkSats,
+    selectedCable, selectedRegion, selectedIXP, selectedAlert,
+    selectedTower, selectedOutage,
+    totalCables, totalRegions, totalIXPs, totalAlerts,
+    totalTowers, totalOutages,
+    layers, hoverTooltip, cameraPosition, isLoading,
+    lastUpdate, refreshData, layerErrors,
+    toggleLayer, setLayerError,
+  ]);
+
   return (
-    <Ctx.Provider value={{
-      cables, setCables, cloudRegions, setCloudRegions, ixps, setIxps,
-      bgpAlerts, setBgpAlerts, autonomousSystems, setAutonomousSystems,
-      cellTowers, setCellTowers, outages, setOutages,
-      latencyProbes, setLatencyProbes, fiberRoutes, setFiberRoutes,
-      starlinkSats, setStarlinkSats,
-      selectedCable, setSelectedCable, selectedRegion, setSelectedRegion,
-      selectedIXP, setSelectedIXP, selectedAlert, setSelectedAlert,
-      selectedTower, setSelectedTower, selectedOutage, setSelectedOutage,
-      totalCables, setTotalCables, totalRegions, setTotalRegions,
-      totalIXPs, setTotalIXPs, totalAlerts, setTotalAlerts,
-      totalTowers, setTotalTowers, totalOutages, setTotalOutages,
-      layers, toggleLayer, hoverTooltip, setHoverTooltip,
-      cameraPosition, setCameraPosition, isLoading, setIsLoading,
-      lastUpdate, setLastUpdate, layerErrors, setLayerError,
-    }}>
+    <Ctx.Provider value={value}>
       {children}
     </Ctx.Provider>
   );

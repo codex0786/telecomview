@@ -59,3 +59,13 @@ brew install node@22   # macOS
 - **Next.js 15.2.6** · **React 19.1.2** · **TypeScript 5.8**
 - **CesiumJS 1.116** — 3D globe + satellite imagery
 - **Tailwind CSS 3.4** · **ESLint 9**
+
+---
+
+## Production Roadmap
+
+1. Centralize network data behind API routes. The app now fetches telecom datasets from `/api/*` instead of importing raw arrays in the client rendering layer.
+2. Improve state loading and refresh support via the `TelecomViewProvider`.
+3. Add a refresh button and live status metadata to the UI, so operators can see when data was last refreshed.
+4. Replace static client-side injection with a more resilient API-driven model for real telecom telemetry.
+5. Next steps: connect real BGP/IXP/outage feeds, add history playback, and introduce authentication for enterprise usage.

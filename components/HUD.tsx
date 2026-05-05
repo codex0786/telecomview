@@ -48,7 +48,7 @@ export default function HUD() {
             <div>
               <div style={{ fontSize: "8px", fontFamily: "'IBM Plex Mono', monospace", color: "#475569", letterSpacing: "0.15em" }}>{s.label}</div>
               <div style={{ fontSize: "13px", fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: s.color, textShadow: `0 0 8px ${s.color}55` }}>
-                {s.value.toLocaleString()}
+                {typeof s.value === "number" ? s.value.toLocaleString() : "—"}
               </div>
             </div>
           </div>
