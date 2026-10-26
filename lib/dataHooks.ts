@@ -4,6 +4,7 @@ import { useTelecomView } from "./TelecomViewContext";
 import { SUBMARINE_CABLES, FIBER_ROUTES } from "./cableData";
 import { CLOUD_REGIONS } from "./cloudData";
 import { IXP_DATA } from "./networkData";
+import { BGP_POOL } from "./bgpData";
 import type { BGPAlert, NetworkOutage, CellTower, LatencyProbe } from "./types";
 
 // ── Submarine Cable Data ──────────────────────────────────────────────────────
@@ -42,19 +43,6 @@ export function useFiberData() {
 }
 
 // ── BGP Alerts (live simulation) ──────────────────────────────────────────────
-const BGP_POOL: Omit<BGPAlert, "id" | "timestamp">[] = [
-  { type:"hijack",     asn:45899,  asnName:"VNPT-I-U Vietnam",          prefix:"14.160.0.0/11",   severity:"high",     description:"Prefix hijack detected — unauthorized origin AS",             lat:21.03,  lng:105.83, affectedCountries:["Vietnam","Thailand"],         color:"#ff3b3b" },
-  { type:"leak",       asn:7922,   asnName:"Comcast",                   prefix:"8.8.8.0/24",     severity:"medium",   description:"Route leak from AS7922 propagating Google prefixes",          lat:39.95,  lng:-75.17, affectedCountries:["United States"],              color:"#ffb800" },
-  { type:"withdrawal", asn:3356,   asnName:"Lumen Technologies",        prefix:"4.0.0.0/9",      severity:"low",      description:"Mass BGP withdrawal from Lumen backbone",                    lat:39.74,  lng:-104.98,affectedCountries:["United States","Canada"],      color:"#00f5ff" },
-  { type:"hijack",     asn:24940,  asnName:"Hetzner Online",            prefix:"85.10.0.0/16",   severity:"critical", description:"CRITICAL: Hetzner prefix announced by unregistered AS",      lat:50.11,  lng:8.68,   affectedCountries:["Germany","EU"],               color:"#ff0000" },
-  { type:"anomaly",    asn:13335,  asnName:"Cloudflare",                prefix:"104.16.0.0/12",  severity:"low",      description:"Unusual route propagation from Cloudflare edge",             lat:37.41,  lng:-122.08,affectedCountries:[],                             color:"#00ff88" },
-  { type:"hijack",     asn:16509,  asnName:"Amazon.com",                prefix:"52.0.0.0/8",     severity:"critical", description:"AWS prefix instability — possible route injection",           lat:38.91,  lng:-77.04, affectedCountries:["United States","United Kingdom"],color:"#ff0000" },
-  { type:"leak",       asn:9498,   asnName:"Bharti Airtel",             prefix:"103.0.0.0/16",   severity:"high",     description:"Route leak from Airtel causing misdirection in South Asia",  lat:28.70,  lng:77.10,  affectedCountries:["India","Pakistan","Bangladesh"],color:"#ff3b3b" },
-  { type:"withdrawal", asn:2914,   asnName:"NTT America",               prefix:"129.250.0.0/16", severity:"medium",   description:"NTT backbone prefix withdrawn unexpectedly",                 lat:40.71,  lng:-74.01, affectedCountries:["United States","Japan"],       color:"#ffb800" },
-  { type:"anomaly",    asn:20940,  asnName:"Akamai Technologies",       prefix:"23.0.0.0/8",     severity:"low",      description:"Akamai anycast route update detected globally",               lat:42.36,  lng:-71.06, affectedCountries:[],                             color:"#00f5ff" },
-  { type:"hijack",     asn:58453,  asnName:"China Mobile International",prefix:"223.0.0.0/11",   severity:"high",     description:"Possible BGP hijack affecting Asia-Pacific routes",           lat:22.32,  lng:114.17, affectedCountries:["Hong Kong","Taiwan","Singapore"],color:"#ff3b3b" },
-];
-
 export function useBGPAlertData() {
   const { setBgpAlerts, setTotalAlerts } = useTelecomView();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

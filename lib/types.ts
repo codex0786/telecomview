@@ -105,7 +105,7 @@ export interface FiberRoute {
 
 // ── Starlink ──────────────────────────────────────────────────────────────────
 export interface StarlinkSat {
-  id: string; name: string; lat: number; lng: number; altKm: number; tle1: string; tle2: string;
+  id: string; name: string; lat: number; lng: number; altKm: number; tle1?: string; tle2?: string;
 }
 
 // ── Layer Config ──────────────────────────────────────────────────────────────

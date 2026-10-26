@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { useTelecomView } from "@/lib/TelecomViewContext";
 import { PROVIDER_COLORS } from "@/lib/cloudData";
 import { CABLE_STATUS_COLORS } from "@/lib/cableData";
@@ -119,6 +119,8 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
   const isInit       = useRef(false);
   const clockRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const dayNightRef  = useRef(true);
+  const starlinkPoints = useRef<any>(null);
+  const [viewerReady, setViewerReady] = useState(false);
   const imgRef       = useRef<{ sat: any; night: any; contLabels: any; cityLabels: any }>({
     sat: null, night: null, contLabels: null, cityLabels: null,
   });
@@ -132,8 +134,12 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
     cellTowers, setSelectedTower,
     fiberRoutes,
     latencyProbes,
+    starlinkSats,
     setCameraPosition, setIsLoading, setHoverTooltip,
   } = useTelecomView();
+
+  const dataRef = useRef({ cables, cloudRegions, ixps, bgpAlerts, outages, cellTowers });
+  dataRef.current = { cables, cloudRegions, ixps, bgpAlerts, outages, cellTowers };
 
   useImperativeHandle(ref, () => ({
     flyTo: (lat, lng, alt = 2_000_000) => {
@@ -206,6 +212,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
           terrainProvider: new C.EllipsoidTerrainProvider(),
         });
         viewerRef.current = viewer; window.__cesiumViewer = viewer;
+        setViewerReady(true);
 
         // ── Step 3: OSM fallback if Ion imagery failed ────────────────────
         if (!baseImageryProvider) {
@@ -318,27 +325,27 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
           const type = p.entityType?.getValue();
           if (type === "cable") {
             const id = p.cableId?.getValue();
-            const cable = cables.find(c => c.id === id);
+            const cable = dataRef.current.cables.find(c => c.id === id);
             if (cable) setSelectedCable(cable);
           } else if (type === "cloud") {
             const id = p.regionId?.getValue();
-            const region = cloudRegions.find(r => r.id === id);
+            const region = dataRef.current.cloudRegions.find(r => r.id === id);
             if (region) setSelectedRegion(region);
           } else if (type === "ixp") {
             const id = p.ixpId?.getValue();
-            const ixp = ixps.find(i => i.id === id);
+            const ixp = dataRef.current.ixps.find(i => i.id === id);
             if (ixp) setSelectedIXP(ixp);
           } else if (type === "bgp") {
             const id = p.alertId?.getValue();
-            const alert = bgpAlerts.find(a => a.id === id);
+            const alert = dataRef.current.bgpAlerts.find(a => a.id === id);
             if (alert) setSelectedAlert(alert);
           } else if (type === "outage") {
             const id = p.outageId?.getValue();
-            const outage = outages.find(o => o.id === id);
+            const outage = dataRef.current.outages.find(o => o.id === id);
             if (outage) setSelectedOutage(outage);
           } else if (type === "tower") {
             const id = p.towerId?.getValue();
-            const tower = cellTowers.find(t => t.id === id);
+            const tower = dataRef.current.cellTowers.find(t => t.id === id);
             if (tower) setSelectedTower(tower);
           }
         }, C.ScreenSpaceEventType.LEFT_CLICK);
@@ -346,6 +353,12 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         // Hover handler
         handler.setInputAction((move: any) => {
           const picked = viewer.scene.pick(move.endPosition);
+          if (picked?.id?.starlink) {
+            const s = picked.id.starlink;
+            viewer.scene.canvas.style.cursor = "pointer";
+            setHoverTooltip({ x: move.endPosition.x, y: move.endPosition.y, label: s.name, sublabel: `${Math.round(s.altKm)} km · NORAD ${s.id}`, icon: "🛰️", type: "starlink", color: "#ffffff" });
+            return;
+          }
           if (!picked?.id?.properties) {
             setHoverTooltip(null); viewer.scene.canvas.style.cursor = "default"; return;
           }
@@ -416,7 +429,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
       });
       cableEntities.set(cable.id, segs);
     });
-  }, [cables, layers.submarineCables, selectedCable]); // eslint-disable-line
+  }, [cables, layers.submarineCables, selectedCable, viewerReady]); // eslint-disable-line
 
   // ── ☁️ CLOUD REGIONS ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -456,7 +469,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [cloudRegions, layers.cloudRegions, selectedRegion]); // eslint-disable-line
+  }, [cloudRegions, layers.cloudRegions, selectedRegion, viewerReady]); // eslint-disable-line
 
   // ── 🔄 IXPs ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -491,7 +504,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [ixps, layers.ixps, selectedIXP]); // eslint-disable-line
+  }, [ixps, layers.ixps, selectedIXP, viewerReady]); // eslint-disable-line
 
   // ── ⚡ BGP ALERTS ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -514,7 +527,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [bgpAlerts, layers.bgpAlerts]); // eslint-disable-line
+  }, [bgpAlerts, layers.bgpAlerts, viewerReady]); // eslint-disable-line
 
   // ── 🚨 OUTAGES ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -536,7 +549,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [outages, layers.outages]); // eslint-disable-line
+  }, [outages, layers.outages, viewerReady]); // eslint-disable-line
 
   // ── 🔦 FIBER ROUTES ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -559,7 +572,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       })]);
     });
-  }, [fiberRoutes, layers.fiberRoutes]); // eslint-disable-line
+  }, [fiberRoutes, layers.fiberRoutes, viewerReady]); // eslint-disable-line
 
   // ── 📡 CELL TOWERS ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -582,7 +595,7 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [cellTowers, layers.cellTowers]); // eslint-disable-line
+  }, [cellTowers, layers.cellTowers, viewerReady]); // eslint-disable-line
 
   // ── ⚡ LATENCY HEATMAP ────────────────────────────────────────────────────
   useEffect(() => {
@@ -605,7 +618,30 @@ const GlobeViewer = forwardRef<GlobeHandle, Record<string, never>>((_props, ref)
         },
       }));
     });
-  }, [latencyProbes, layers.latencyHeatmap]); // eslint-disable-line
+  }, [latencyProbes, layers.latencyHeatmap, viewerReady]); // eslint-disable-line
+
+  // ── 🛰️ STARLINK ──────────────────────────────────────────────────────────
+  // Thousands of satellites: a PointPrimitiveCollection is far cheaper than entities
+  useEffect(() => {
+    const v = viewerRef.current; if (!v || !window.Cesium) return;
+    const C = window.Cesium;
+    if (!starlinkPoints.current || starlinkPoints.current.isDestroyed()) {
+      starlinkPoints.current = v.scene.primitives.add(new C.PointPrimitiveCollection());
+    }
+    const points = starlinkPoints.current;
+    points.removeAll();
+    if (!layers.starlink) return;
+    const color = C.Color.fromCssColorString("#e6fbff").withAlpha(0.75);
+    starlinkSats.forEach(sat => {
+      points.add({
+        id: { starlink: sat },
+        position: C.Cartesian3.fromDegrees(sat.lng, sat.lat, sat.altKm * 1000),
+        pixelSize: 2,
+        color,
+        scaleByDistance: new C.NearFarScalar(1.0e6, 1.5, 4.0e7, 0.6),
+      });
+    });
+  }, [starlinkSats, layers.starlink, viewerReady]); // eslint-disable-line
 
   return <div ref={containerRef} className="fixed inset-0 w-full h-full" style={{ background: "#020408" }} />;
 });

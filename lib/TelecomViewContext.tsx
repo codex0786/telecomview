@@ -5,7 +5,7 @@ import type {
   CellTower, NetworkOutage, LatencyProbe, FiberRoute, StarlinkSat,
   LayerConfig, HoverTooltip,
 } from "./types";
-import { fetchTelecomData } from "./telecomApi";
+import { fetchTelecomData, fetchBGPAlerts, fetchOutages, fetchLatency, fetchStarlink } from "./telecomApi";
 
 // Re-export types needed by components
 export type { BGPAlert, NetworkOutage, IXP, CloudRegion, SubmarineCable, CellTower, LayerConfig };
@@ -135,6 +135,7 @@ export function TelecomViewProvider({ children }: { children: React.ReactNode })
       setLatencyProbes(data.probes);
       setCellTowers(data.towers);
       setTotalTowers(data.totalTowers);
+      setFiberRoutes(data.fiberRoutes);
     } catch (error) {
       console.error("Failed to load telecom data:", error);
       setLayerError("submarineCables", "Unable to load telecom data");
@@ -147,6 +148,55 @@ export function TelecomViewProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+
+  // ── Background polling for live layers (no loading screen) ────────────────
+  // Each feed refreshes on its own cadence; polling pauses while the tab is hidden.
+  useEffect(() => {
+    const controller = new AbortController();
+    const poll = (load: () => Promise<void>, ms: number) => setInterval(() => {
+      if (document.hidden) return;
+      load()
+        .then(() => setLastUpdate(new Date()))
+        .catch(err => { if (!controller.signal.aborted) console.warn("Live refresh failed:", err); });
+    }, ms);
+
+    const timers = [
+      poll(async () => {
+        const { probes } = await fetchLatency(controller.signal);
+        setLatencyProbes(probes || []);
+      }, 15_000),
+      poll(async () => {
+        const { alerts, total } = await fetchBGPAlerts(controller.signal);
+        setBgpAlerts(alerts || []); setTotalAlerts(total);
+      }, 30_000),
+      poll(async () => {
+        const { outages, total } = await fetchOutages(controller.signal);
+        setOutages(outages || []); setTotalOutages(total);
+      }, 45_000),
+    ];
+    return () => { timers.forEach(clearInterval); controller.abort(); };
+  }, []);
+
+  // ── Starlink: only fetched while the layer is on ──────────────────────────
+  useEffect(() => {
+    if (!layers.starlink) return;
+    const controller = new AbortController();
+    const load = async () => {
+      if (document.hidden) return;
+      try {
+        const { satellites, error } = await fetchStarlink(controller.signal);
+        setStarlinkSats(satellites || []);
+        setLayerError("starlink", error ?? null);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        console.warn("Starlink refresh failed:", err);
+        setLayerError("starlink", "Starlink data unavailable");
+      }
+    };
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => { clearInterval(timer); controller.abort(); };
+  }, [layers.starlink, setLayerError]);
 
   const value = useMemo(() => ({
     cables, setCables, cloudRegions, setCloudRegions, ixps, setIxps,

@@ -11,18 +11,19 @@
   "dependencies": {
     "next": "15.2.6",
     "react": "19.1.2",
-    "react-dom": "19.1.2"
+    "react-dom": "19.1.2",
+    "satellite.js": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5.8.3",
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8.5.3",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.23.0",
-    "eslint-config-next": "15.2.6"
+    "eslint-config-next": "15.2.6",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
   },
   "overrides": {
     "eslint-visitor-keys": "^4.2.0"
